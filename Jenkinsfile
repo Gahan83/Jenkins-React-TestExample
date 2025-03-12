@@ -9,11 +9,9 @@ pipeline {
     }
 
     stages {
-        stage('Install Dependencies') {
+        stage('Checkout') {
             steps {
-                script {
-                    sh 'npm install'
-                }
+                checkout scm
             }
         }
 
