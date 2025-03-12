@@ -2,43 +2,47 @@ pipeline {
     agent any
 
     environment {
-        NODE_VERSION = '20'
-        BUILD_PATH = "${WORKSPACE}\\build"
-        DEPLOY_SERVER = "ec2-44-220-164-163.compute-1.amazonaws.com"
-        DEPLOY_USER = "Administrator"
-        DEPLOY_PASS = "FhKc@5OoTbHptzV)XdPH4NNRjGQR7nV?"
-        DEPLOY_PATH = "D:\\CI_CD\\test_ReactJS"
+        IIS_HOST = 'ec2-44-220-164-163.compute-1.amazonaws.com'
+        IIS_USER = 'Administrator'
+        IIS_PASS = 'FhKc@5OoTbHptzV)XdPH4NNRjGQR7nV?'
+        REMOTE_DIR = 'C:\\inetpub\\wwwroot\\ReactApp'
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main', credentialsId: 'git credentials id', url: 'sample repo url'
-            }
-        }
-
         stage('Install Dependencies') {
             steps {
-                sh 'npm install'
+                script {
+                    sh 'npm install'
+                }
             }
         }
 
-        stage('Build React App') {
-            steps {
-                sh 'npm run build'
-            }
-        }
-
-        stage('Deploy to Windows Server') {
+        stage('Build') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'Uat-Server', usernameVariable: 'DEPLOY_USER', passwordVariable: 'DEPLOY_PASS')]) {
-                        sh """
-                        net use \\\\${DEPLOY_SERVER}\\C\$ /user:${DEPLOY_USER} ${DEPLOY_PASS}
-                        robocopy ${BUILD_PATH} \\\\${DEPLOY_SERVER}\\C\$\\inetpub\\wwwroot\\dummy-app /E /MIR /XD node_modules
-                        net use \\\\${DEPLOY_SERVER}\\C\$ /delete
-                        """
-                    }
+                    sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Publish to IIS') {
+            steps {
+                script {
+                    // Compress the build folder
+                    sh 'zip -r build.zip build/'
+
+                    // Copy build.zip to IIS server via SCP
+                    sh """
+                    sshpass -p '${IIS_PASS}' scp -o StrictHostKeyChecking=no build.zip ${IIS_USER}@${IIS_HOST}:/C:/inetpub/wwwroot/
+                    """
+
+                    // Unzip and deploy on IIS server
+                    sh """
+                    sshpass -p '${IIS_PASS}' ssh -o StrictHostKeyChecking=no ${IIS_USER}@${IIS_HOST} powershell -Command "
+                        Expand-Archive -Force C:\\inetpub\\wwwroot\\build.zip -DestinationPath ${REMOTE_DIR};
+                        Remove-Item C:\\inetpub\\wwwroot\\build.zip
+                    "
+                    """
                 }
             }
         }
@@ -46,10 +50,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Deployment Successful!'
+            echo 'Deployment successful!'
         }
         failure {
-            echo '❌ Deployment Failed!'
+            echo 'Deployment failed!'
         }
     }
 }
