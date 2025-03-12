@@ -16,9 +16,15 @@ pipeline {
         }
 
         stage('Build') {
+            agent {
+                docker {
+                    image 'node:lts'  // Using a Node.js Docker image
+                }
+            }
             steps {
                 script {
-                    sh 'npm run build'
+                    sh 'npm install'    // Install dependencies
+                    sh 'npm run build'  // Build the React app
                 }
             }
         }
