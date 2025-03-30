@@ -2,51 +2,43 @@ pipeline {
     agent any
 
     environment {
-        IIS_HOST = 'ec2-44-220-164-163.compute-1.amazonaws.com'
-        IIS_USER = 'Administrator'
-        IIS_PASS = 'FhKc@5OoTbHptzV)XdPH4NNRjGQR7nV?'
-        REMOTE_DIR = 'C:\\inetpub\\wwwroot\\ReactApp'
+        NODE_VERSION = '20'
+        BUILD_PATH = "${WORKSPACE}\\build"
+        DEPLOY_SERVER = "101.38.10.157:58373"
+        DEPLOY_USER = "CygglScccrvcsc9Mgr"
+        DEPLOY_PASS = "Dwudss$CakLy@515W"
+        DEPLOY_PATH = "D:\\CI_CD\\test_ReactJS"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                checkout scm
+                git branch: 'main', credentialsId: '3bb88872-897d-441a-afc6-b43fe3d190cb', url: 'http://github.cylsys.com/Opsadmin/DevTest.git'
             }
         }
 
-        stage('Build') {
-            agent {
-                docker {
-                    image 'node:lts'  // Using a Node.js Docker image
-                }
-            }
+        stage('Install Dependencies') {
             steps {
-                script {
-                    sh 'npm install'    // Install dependencies
-                    sh 'npm run build'  // Build the React app
-                }
+                sh 'npm install'  // Linux command for npm install
             }
         }
 
-        stage('Publish to IIS') {
+        stage('Build React App') {
+            steps {
+                sh 'npm run build'  // Linux command for npm run build
+            }
+        }
+
+        stage('Deploy to Windows Server') {
             steps {
                 script {
-                    // Compress the build folder
-                    sh 'zip -r build.zip build/'
-
-                    // Copy build.zip to IIS server via SCP
-                    sh """
-                    sshpass -p '${IIS_PASS}' scp -o StrictHostKeyChecking=no build.zip ${IIS_USER}@${IIS_HOST}:/C:/inetpub/wwwroot/
-                    """
-
-                    // Unzip and deploy on IIS server
-                    sh """
-                    sshpass -p '${IIS_PASS}' ssh -o StrictHostKeyChecking=no ${IIS_USER}@${IIS_HOST} powershell -Command "
-                        Expand-Archive -Force C:\\inetpub\\wwwroot\\build.zip -DestinationPath ${REMOTE_DIR};
-                        Remove-Item C:\\inetpub\\wwwroot\\build.zip
-                    "
-                    """
+                    withCredentials([usernamePassword(credentialsId: 'Uat-Server', usernameVariable: 'DEPLOY_USER', passwordVariable: 'DEPLOY_PASS')]) {
+                        sh """
+                        # Use SCP to copy the build files to the Windows server
+                        # Make sure OpenSSH Server is installed and running on the Windows server
+                        scp -r ${BUILD_PATH}/* ${DEPLOY_USER}@${DEPLOY_SERVER}:${DEPLOY_PATH}
+                        """
+                    }
                 }
             }
         }
@@ -54,10 +46,10 @@ pipeline {
 
     post {
         success {
-            echo 'Deployment successful!'
+            echo 'Deployment Successful!'
         }
         failure {
-            echo 'Deployment failed!'
+            echo 'Deployment Failed!'
         }
     }
 }
