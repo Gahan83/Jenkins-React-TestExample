@@ -47,9 +47,33 @@ pipeline {
     post {
         success {
             echo 'Deployment Successful!'
+            emailext (
+                subject: "Jenkins Build Successful: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                    <p>The Jenkins pipeline has completed successfully.</p>
+                    <p><b>Job:</b> ${env.JOB_NAME}</p>
+                    <p><b>Build:</b> #${env.BUILD_NUMBER}</p>
+                    <p><b>View details:</b> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                """,
+                recipientProviders: [[$class: 'DevelopersRecipientProvider']],
+                to: 'gahan899@gamil.com',
+                mimeType: 'text/html'
+            )
         }
         failure {
             echo 'Deployment Failed!'
+            emailext (
+                subject: "Jenkins Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                    <p>The Jenkins pipeline has failed.</p>
+                    <p><b>Job:</b> ${env.JOB_NAME}</p>
+                    <p><b>Build:</b> #${env.BUILD_NUMBER}</p>
+                    <p>Please check Jenkins for more details: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                """,
+                recipientProviders: [[$class: 'DevelopersRecipientProvider']],
+                to: 'gahan899@gamil.com',
+                mimeType: 'text/html'
+            )
         }
     }
 }
