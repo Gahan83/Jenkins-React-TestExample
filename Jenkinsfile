@@ -56,7 +56,7 @@ pipeline {
                     <p><b>View details:</b> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
                 """,
                 recipientProviders: [[$class: 'DevelopersRecipientProvider']],
-                to: 'gahan899@gamil.com',
+                to: 'gahan899@gmail.com',
                 mimeType: 'text/html'
             )
         }
@@ -71,7 +71,7 @@ pipeline {
                     <p>Please check Jenkins for more details: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
                 """,
                 recipientProviders: [[$class: 'DevelopersRecipientProvider']],
-                to: 'gahan899@gamil.com',
+                to: 'gahan899@gmail.com',
                 mimeType: 'text/html'
             )
         }
